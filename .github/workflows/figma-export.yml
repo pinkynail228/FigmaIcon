@@ -62,7 +62,8 @@ jobs:
         if: steps.check-changes.outputs.has-changes == 'true' || github.event.inputs.force_update == 'true'
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Используем персональный токен, т.к. у GITHUB_TOKEN могут быть org-политики, запрещающие PR
+          token: ${{ secrets.PR_TOKEN }}
           commit-message: "feat: обновление иконок из Figma"
           title: "🔄 Обновление иконок из Figma"
           body: |
