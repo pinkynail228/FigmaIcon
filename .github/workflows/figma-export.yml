@@ -1,0 +1,86 @@
+name: Figma Icons Export
+
+on:
+  schedule:
+    # Запуск каждый день в 9:00 UTC (12:00 МСК)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Ручной запуск
+    inputs:
+      force_update:
+        description: 'Принудительное обновление (создать PR даже если изменений нет)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  export-icons:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Export icons from Figma
+        env:
+          FIGMA_FILE_ID: ${{ secrets.FIGMA_FILE_ID }}
+          FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_ACCESS_TOKEN }}
+        run: npm run export
+
+      - name: Check for changes
+        id: check-changes
+        run: |
+          if git diff --quiet; then
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            echo "📝 Изменений не обнаружено"
+          else
+            echo "has-changes=true" >> $GITHUB_OUTPUT
+            echo "📝 Обнаружены изменения в иконках"
+          fi
+
+      - name: Configure Git
+        if: steps.check-changes.outputs.has-changes == 'true' || github.event.inputs.force_update == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Create Pull Request
+        if: steps.check-changes.outputs.has-changes == 'true' || github.event.inputs.force_update == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "feat: обновление иконок из Figma"
+          title: "🔄 Обновление иконок из Figma"
+          body: |
+            ## 📦 Автоматическое обновление иконок
+            
+            Этот PR создан автоматически GitHub Actions для синхронизации иконок из Figma.
+            
+            ### 📋 Изменения:
+            - Обновлены иконки из страницы "Icons" в Figma
+            - Время экспорта: ${{ github.run_started_at }}
+            
+            ### 🔍 Проверьте:
+            - [ ] Все иконки корректно экспортированы
+            - [ ] Имена файлов соответствуют узлам в Figma
+            - [ ] SVG файлы валидны
+            
+            ---
+            *Этот PR создан автоматически системой экспорта иконок*
+          branch: figma-icons-update
+          delete-branch: true
+          labels: |
+            automated
+            icons
+            figma

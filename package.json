@@ -1,0 +1,32 @@
+{
+  "name": "figma-icon-export",
+  "version": "1.0.0",
+  "description": "Автоматический экспорт иконок из Figma в SVG",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "export": "node scripts/figma-export-mvp.mjs",
+    "test": "echo \"Тесты не настроены\" && exit 0"
+  },
+  "keywords": [
+    "figma",
+    "icons",
+    "svg",
+    "export",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pinkynail228/FigmaIcon.git"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
