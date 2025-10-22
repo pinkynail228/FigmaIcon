@@ -18,7 +18,7 @@ const CONFIG = {
 
 // Проверка переменных окружения
 if (!CONFIG.FIGMA_FILE_ID || !CONFIG.FIGMA_ACCESS_TOKEN) {
-  console.error('❌ Ошибка: Необходимо установить FIGMA_FILE_ID и FIGMA_ACCESS_TOKEN');
+  console.error('Ошибка: Необходимо установить FIGMA_FILE_ID и FIGMA_ACCESS_TOKEN');
   process.exit(1);
 }
 
@@ -149,7 +149,7 @@ async function exportNodeAsSVG(nodeId) {
     const data = await response.json();
     return data.images[nodeId];
   } catch (error) {
-    console.error(`❌ Ошибка при экспорте узла ${nodeId}:`, error.message);
+    console.error(`Ошибка при экспорте узла ${nodeId}:`, error.message);
     throw error;
   }
 }
@@ -168,11 +168,11 @@ async function downloadAndSaveSVG(svgUrl, fileName) {
     const filePath = path.join(CONFIG.OUTPUT_DIR, `${fileName}.svg`);
     
     await fs.writeFile(filePath, svgContent, 'utf8');
-    console.log(`✅ Экспортирован: ${fileName}.svg`);
+    console.log(`Экспортирован: ${fileName}.svg`);
     
     return filePath;
   } catch (error) {
-    console.error(`❌ Ошибка при сохранении ${fileName}:`, error.message);
+    console.error(`Ошибка при сохранении ${fileName}:`, error.message);
     throw error;
   }
 }
@@ -181,29 +181,29 @@ async function downloadAndSaveSVG(svgUrl, fileName) {
  * Основная функция экспорта
  */
 async function exportIcons() {
-  console.log('🚀 Начинаем экспорт иконок из Figma...');
+  console.log('Начинаем экспорт иконок из Figma...');
   
   try {
     // Создаем папку назначения
     await fs.mkdir(CONFIG.OUTPUT_DIR, { recursive: true });
     
     // Получаем данные файла
-    console.log('📥 Получаем данные файла из Figma...');
+    console.log('Получаем данные файла из Figma...');
     const figmaData = await getFigmaFile();
     
     // Находим страницу с иконками
-    console.log(`🔍 Ищем страницу "${CONFIG.FIGMA_PAGE_NAME}"...`);
+    console.log(`Ищем страницу "${CONFIG.FIGMA_PAGE_NAME}"...`);
     const iconsPage = findIconsPage(figmaData.document);
     
     // Находим все узлы с иконками
-    console.log('🎯 Ищем узлы с иконками...');
-    console.log('📋 Структура страницы:');
+    console.log('Ищем узлы с иконками...');
+    console.log('Структура страницы:');
     console.log(`   - Название: ${iconsPage.name}`);
     console.log(`   - Тип: ${iconsPage.type}`);
     console.log(`   - Дочерних узлов: ${iconsPage.children ? iconsPage.children.length : 0}`);
     
     if (iconsPage.children) {
-      console.log('📋 Первые 5 дочерних узлов:');
+      console.log('Первые 5 дочерних узлов:');
       iconsPage.children.slice(0, 5).forEach((child, index) => {
         console.log(`   ${index + 1}. ${child.name} (${child.type})`);
         if (child.children) {
@@ -218,15 +218,15 @@ async function exportIcons() {
     const iconNodes = findIconNodes(iconsPage);
     
     if (iconNodes.length === 0) {
-      console.log('⚠️  Иконки не найдены');
-      console.log('💡 Попробуйте проверить:');
+      console.log('Иконки не найдены');
+      console.log('Подсказки:');
       console.log('   - Название страницы должно быть "Icons"');
       console.log('   - Иконки должны быть компонентами или фреймами');
       console.log('   - Иконки должны содержать графические элементы');
       return;
     }
     
-    console.log(`📊 Найдено ${iconNodes.length} иконок`);
+    console.log(`Найдено ${iconNodes.length} иконок`);
     
     // Экспортируем каждую иконку
     const exportedFiles = [];
@@ -234,13 +234,13 @@ async function exportIcons() {
     
     for (const node of iconNodes) {
       try {
-        console.log(`🔄 Экспортируем: ${node.name}`);
+        console.log(`Экспортируем: ${node.name}`);
         
         // Получаем URL для экспорта
         const svgUrl = await exportNodeAsSVG(node.id);
         
         if (!svgUrl) {
-          console.warn(`⚠️  Не удалось получить URL для ${node.name}`);
+          console.warn(`Не удалось получить URL для ${node.name}`);
           continue;
         }
         
@@ -251,7 +251,7 @@ async function exportIcons() {
         exportedFiles.push(filePath);
         
       } catch (error) {
-        console.error(`❌ Ошибка при экспорте ${node.name}:`, error.message);
+        console.error(`Ошибка при экспорте ${node.name}:`, error.message);
       }
     }
     
@@ -261,16 +261,16 @@ async function exportIcons() {
       const toDelete = existing.filter(f => f.toLowerCase().endsWith('.svg') && !expectedFileNames.has(f));
       for (const file of toDelete) {
         await fs.unlink(path.join(CONFIG.OUTPUT_DIR, file));
-        console.log(`🗑  Удален: ${file}`);
+        console.log(`Удален: ${file}`);
       }
-      console.log(`✅ Экспорт завершен! Создано ${exportedFiles.length} файлов, удалено ${toDelete.length}`);
+      console.log(`Экспорт завершен. Создано ${exportedFiles.length} файлов, удалено ${toDelete.length}`);
     } catch (e) {
-      console.warn('⚠️  Не удалось выполнить синхронизацию удаления:', e.message);
-      console.log(`✅ Экспорт завершен! Создано ${exportedFiles.length} файлов`);
+      console.warn('Не удалось выполнить синхронизацию удаления:', e.message);
+      console.log(`Экспорт завершен. Создано ${exportedFiles.length} файлов`);
     }
     
   } catch (error) {
-    console.error('❌ Критическая ошибка:', error.message);
+    console.error('Критическая ошибка:', error.message);
     process.exit(1);
   }
 }
