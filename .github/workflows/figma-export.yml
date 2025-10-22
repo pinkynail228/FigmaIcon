@@ -1,5 +1,9 @@
 name: Figma Icons Export
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   schedule:
     # Запуск каждый день в 9:00 UTC (12:00 МСК)
@@ -41,19 +45,18 @@ jobs:
       - name: Check for changes
         id: check-changes
         run: |
-          if git diff --quiet; then
-            echo "has-changes=false" >> $GITHUB_OUTPUT
-            echo "📝 Изменений не обнаружено"
-          else
+          # Покажем статус, включая неотслеживаемые
+          git status --porcelain
+          # Если есть изменения (включая untracked) — флагуем
+          if [ -n "$(git status --porcelain)" ]; then
             echo "has-changes=true" >> $GITHUB_OUTPUT
             echo "📝 Обнаружены изменения в иконках"
+          else
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            echo "📝 Изменений не обнаружено"
           fi
 
-      - name: Configure Git
-        if: steps.check-changes.outputs.has-changes == 'true' || github.event.inputs.force_update == 'true'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+      # Создание PR выполнит коммит от имени GitHub Actions автоматически
 
       - name: Create Pull Request
         if: steps.check-changes.outputs.has-changes == 'true' || github.event.inputs.force_update == 'true'
