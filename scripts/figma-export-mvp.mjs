@@ -65,11 +65,51 @@ function findIconsPage(document) {
  * Рекурсивно найти все узлы с иконками
  */
 function findIconNodes(node, icons = []) {
-  // Если узел имеет тип, который может содержать иконку
-  if (node.type === 'COMPONENT' || node.type === 'INSTANCE' || node.type === 'FRAME') {
-    // Проверяем, является ли это иконкой (обычно это компоненты или фреймы)
-    if (node.name && !node.name.startsWith('_') && !node.name.includes(' ')) {
-      icons.push(node);
+  // Пропускаем служебные узлы
+  if (node.name && (
+    node.name.startsWith('_') || 
+    node.name.includes('Style=') ||
+    node.name.includes('Variant=') ||
+    node.name === 'Icons' ||
+    node.name.includes('Property')
+  )) {
+    // Продолжаем поиск в дочерних узлах
+    if (node.children) {
+      for (const child of node.children) {
+        findIconNodes(child, icons);
+      }
+    }
+    return icons;
+  }
+
+  // Если узел является компонентом, фреймом, группой или набором компонентов с содержимым
+  if (node.type === 'COMPONENT' || node.type === 'INSTANCE' || node.type === 'FRAME' || node.type === 'GROUP' || node.type === 'COMPONENT_SET') {
+    // Проверяем, что это не служебный узел и имеет содержимое
+    if (node.name && 
+        !node.name.startsWith('_') && 
+        !node.name.includes('Style=') &&
+        !node.name.includes('Variant=') &&
+        node.name !== 'Icons' &&
+        node.children && 
+        node.children.length > 0) {
+      
+      // Проверяем, что узел содержит графические элементы или компоненты
+      const hasGraphicContent = node.children.some(child => 
+        child.type === 'VECTOR' || 
+        child.type === 'BOOLEAN_OPERATION' ||
+        child.type === 'ELLIPSE' ||
+        child.type === 'RECTANGLE' ||
+        child.type === 'POLYGON' ||
+        child.type === 'STAR' ||
+        child.type === 'LINE' ||
+        child.type === 'GROUP' || // Группы тоже могут содержать иконки
+        child.type === 'COMPONENT' || // Компоненты
+        child.type === 'COMPONENT_SET' // Наборы компонентов
+      );
+      
+      if (hasGraphicContent) {
+        icons.push(node);
+      }
     }
   }
 
@@ -157,10 +197,32 @@ async function exportIcons() {
     
     // Находим все узлы с иконками
     console.log('🎯 Ищем узлы с иконками...');
+    console.log('📋 Структура страницы:');
+    console.log(`   - Название: ${iconsPage.name}`);
+    console.log(`   - Тип: ${iconsPage.type}`);
+    console.log(`   - Дочерних узлов: ${iconsPage.children ? iconsPage.children.length : 0}`);
+    
+    if (iconsPage.children) {
+      console.log('📋 Первые 5 дочерних узлов:');
+      iconsPage.children.slice(0, 5).forEach((child, index) => {
+        console.log(`   ${index + 1}. ${child.name} (${child.type})`);
+        if (child.children) {
+          console.log(`      Дочерних элементов: ${child.children.length}`);
+          if (child.children.length > 0) {
+            console.log(`      Типы дочерних: ${child.children.map(c => c.type).join(', ')}`);
+          }
+        }
+      });
+    }
+    
     const iconNodes = findIconNodes(iconsPage);
     
     if (iconNodes.length === 0) {
       console.log('⚠️  Иконки не найдены');
+      console.log('💡 Попробуйте проверить:');
+      console.log('   - Название страницы должно быть "Icons"');
+      console.log('   - Иконки должны быть компонентами или фреймами');
+      console.log('   - Иконки должны содержать графические элементы');
       return;
     }
     
