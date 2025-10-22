@@ -230,6 +230,7 @@ async function exportIcons() {
     
     // Экспортируем каждую иконку
     const exportedFiles = [];
+    const expectedFileNames = new Set();
     
     for (const node of iconNodes) {
       try {
@@ -245,6 +246,7 @@ async function exportIcons() {
         
         // Скачиваем и сохраняем SVG
         const fileName = node.name.replace(/[^a-zA-Z0-9-_]/g, '_'); // Очищаем имя файла
+        expectedFileNames.add(`${fileName}.svg`);
         const filePath = await downloadAndSaveSVG(svgUrl, fileName);
         exportedFiles.push(filePath);
         
@@ -253,7 +255,19 @@ async function exportIcons() {
       }
     }
     
-    console.log(`✅ Экспорт завершен! Создано ${exportedFiles.length} файлов`);
+    // Синхронизация: удаляем файлы, которых нет в Figma
+    try {
+      const existing = await fs.readdir(CONFIG.OUTPUT_DIR);
+      const toDelete = existing.filter(f => f.toLowerCase().endsWith('.svg') && !expectedFileNames.has(f));
+      for (const file of toDelete) {
+        await fs.unlink(path.join(CONFIG.OUTPUT_DIR, file));
+        console.log(`🗑  Удален: ${file}`);
+      }
+      console.log(`✅ Экспорт завершен! Создано ${exportedFiles.length} файлов, удалено ${toDelete.length}`);
+    } catch (e) {
+      console.warn('⚠️  Не удалось выполнить синхронизацию удаления:', e.message);
+      console.log(`✅ Экспорт завершен! Создано ${exportedFiles.length} файлов`);
+    }
     
   } catch (error) {
     console.error('❌ Критическая ошибка:', error.message);
